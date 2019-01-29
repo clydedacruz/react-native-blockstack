@@ -228,6 +228,38 @@ class RNBlockstackSdkModule(private val reactContext: ReactApplicationContext) :
         }
     }
 
+    @ReactMethod
+    fun encryptContent(content: String, optionsArg: ReadableMap, promise: Promise) {
+        if (canUseBlockstack()) {
+            runOnV8Thread {
+                val options = CryptoOptions(optionsArg.getString("publicKey"))
+                var cipherText = session.encryptContent(content, options).value
+                if (cipherText != null){
+                    promise.resolve(convertJsonToMap(cipherText.json))
+                } else {
+                    promise.reject("ERROR", "Failed to encrypt content")
+                }
+            }
+        }
+    }
+
+    @ReactMethod
+    fun decryptContent(content: String,binary: Boolean ,optionsArg: ReadableMap, promise: Promise) {
+        if (canUseBlockstack()) {
+            runOnV8Thread {
+
+                try {
+                    val options = CryptoOptions(optionsArg.getString("privateKey"))
+                    var plainText = session.decryptContent(content,binary, options).value
+                    promise.resolve(plainText)
+
+                }catch (e: Exception) {
+                    promise.reject("ERROR", "Failed to decrypt content: " + e.toString())
+                }
+            }
+        }
+    }
+
     private fun canUseBlockstack() = session.loaded && reactApplicationContext.currentActivity != null
 
 
